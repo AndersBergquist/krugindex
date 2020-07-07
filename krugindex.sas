@@ -66,7 +66,7 @@ proc ds2;
 			else utbibl='work';
 			uttabell=utbibl || '.' || utfil;
 			spec_index_helper(inbibl, infilB, utbibl, utfilB, varNamn, grpNamn, antalPerVarNamn);
-			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ',  grpNamn as ' || varNamn || ', (grpAndel/jmfAndel) as bSpecIndex, grpAndel as andel_' || grpNamn || ', jmfAndel from work.totAndel'); 
+			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ',  varNamn as ' || varNamn || ', (grpAndel/jmfAndel) as bSpecIndex, grpAndel as andel_' || grpNamn || ', jmfAndel from work.totAndel'); 
 			sqlExec('drop table work.totAndel'); 
 
 		end;
