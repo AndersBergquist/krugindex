@@ -27,11 +27,11 @@ run;quit;
 proc ds2;
 	package sasuser.krugindex / overwrite=yes;
 
-	forward kindex_helper;
+	forward spec_index_helper;
 
 		method kindex(varchar(250) infil, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
 			declare varchar(8) inbibl utbibl;
-			declare varchar(250) infilB utfilB;
+			declare varchar(250) infilB utfilB uttabell;;
 
 			if index(infil,'.')>0 then do;
 				inbibl=scan(infil,1,'.');
@@ -43,10 +43,35 @@ proc ds2;
 				utfilB=scan(utfil,2,'.');
 			end;
 			else utbibl='work';
-			kindex_helper(inbibl, infilB, utbibl, utfilB, varNamn, grpNamn, antalPerVarNamn);
+			uttabell=utbibl || '.' || utfil;
+			spec_index_helper(inbibl, infilB, utbibl, utfilB, varNamn, grpNamn, antalPerVarNamn);
+			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ', (sum(abs(grpAndel-jmfAndel))) as k_index from work.totAndel group by ' || grpNamn);
+			sqlExec('drop table work.totAndel'); 
+
 		end;
 
-		method kindex_helper(varchar(8) inbibl, varchar(250) infil, varchar(8) utbibl, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
+		method bindex(varchar(250) infil, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
+			declare varchar(8) inbibl utbibl;
+			declare varchar(250) infilB utfilB uttabell;;
+
+			if index(infil,'.')>0 then do;
+				inbibl=scan(infil,1,'.');
+				infilB=scan(infil,2,'.');
+			end;
+			else inbibl='work';
+			if index(utfil,'.')>0 then do;
+				utbibl=scan(utfil,1,'.');
+				utfilB=scan(utfil,2,'.');
+			end;
+			else utbibl='work';
+			uttabell=utbibl || '.' || utfil;
+			spec_index_helper(inbibl, infilB, utbibl, utfilB, varNamn, grpNamn, antalPerVarNamn);
+			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ',  grpNamn as ' || varNamn || ', (grpAndel/jmfAndel) as bSpecIndex, grpAndel as andel_' || grpNamn || ', jmfAndel from work.totAndel'); 
+			sqlExec('drop table work.totAndel'); 
+
+		end;
+
+		method spec_index_helper(varchar(8) inbibl, varchar(250) infil, varchar(8) utbibl, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
 			declare varchar(258) intabell uttabell;
 
 			intabell=inbibl || '.' || infil;
@@ -62,9 +87,6 @@ proc ds2;
                      from work.totGrpjmfSum t1 join work.totAntal t2 on (t1.grpNamn=t2.grpNamn)');
 			sqlExec('drop table work.totGrpJmfSum');
 			sqlExec('drop table work.totAntal');
-			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ', (sum(abs(grpAndel-jmfAndel))) as k_index from work.totAndel group by ' || grpNamn);
-			sqlExec('drop table work.totAndel'); 
-
 		end;
 	endpackage;
 run;quit;
