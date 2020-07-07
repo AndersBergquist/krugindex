@@ -25,7 +25,7 @@ run;quit;
 */
 
 proc ds2;
-	package sasuser.krugindex / overwrite=yes;
+	package sasuser.specindex / overwrite=yes;
 
 	forward spec_index_helper;
 
