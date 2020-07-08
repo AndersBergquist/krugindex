@@ -31,7 +31,7 @@ proc ds2;
 	forward spec_index_helper;
 
 		method specindex();
-			version='B1.0.1';
+			version='B1.0.2';
 		end;
 
 		method kindex(varchar(250) infil, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
@@ -78,7 +78,7 @@ proc ds2;
 			end;
 			uttabell=utbibl || '.' || utfilB;
 			spec_index_helper(inbibl, infilB, utbibl, utfilB, varNamn, grpNamn, antalPerVarNamn);
-			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ',  varNamn as ' || varNamn || ', (case when jmfAndel in (., 0) and grpAndel>0 then 99 when jmfAndel in (., 0) and grpAndel=0 then 1 else (grpAndel/jmfAndel) end) as bSpecIndex, grpAndel as andel_' || grpNamn || ', jmfAndel from work.totAndel'); 
+			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ',  varNamn as ' || varNamn || ', grpKoncVar AS antal_' || grpNamn || ', (case when jmfAndel in (., 0) and grpAndel>0 then 99 when jmfAndel in (., 0) and grpAndel=0 then 1 else (grpAndel/jmfAndel) end) as bSpecIndex, grpAndel as andel_' || grpNamn || ', jmfAndel from work.totAndel'); 
 			sqlExec('drop table work.totAndel'); 
 
 			put 'Spexindex ' version;
@@ -96,7 +96,7 @@ proc ds2;
 			sqlExec('drop table work.totGrpSum');
 			sqlExec('drop table work.totJmfSum');
 			sqlExec('create table work.totAntal as select grpNamn, sum(grpKoncVar) as grpSumAntal, sum(jmfAntal)as jmfSumAndel from work.totGrpjmfSum group by grpNamn');
-			sqlExec('create table work.totAndel as select t1.varNamn, t2.grpNamn, (t1.grpKoncVar/t2.grpSumAntal) as grpAndel, (t1.jmfAntal/t2.jmfSumAndel) as jmfAndel
+			sqlExec('create table work.totAndel as select t1.varNamn, t2.grpNamn, t1.grpKoncVar, (t1.grpKoncVar/t2.grpSumAntal) as grpAndel, (t1.jmfAntal/t2.jmfSumAndel) as jmfAndel
                      from work.totGrpjmfSum t1 join work.totAntal t2 on (t1.grpNamn=t2.grpNamn)');
 			sqlExec('drop table work.totGrpJmfSum');
 			sqlExec('drop table work.totAntal');
