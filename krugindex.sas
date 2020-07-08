@@ -26,8 +26,13 @@ run;quit;
 
 proc ds2;
 	package sasuser.specindex / overwrite=yes;
+		declare varchar(50) version;
 
 	forward spec_index_helper;
+
+		method specindex();
+			version='B1.0.1';
+		end;
 
 		method kindex(varchar(250) infil, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
 			declare varchar(8) inbibl utbibl;
@@ -42,12 +47,16 @@ proc ds2;
 				utbibl=scan(utfil,1,'.');
 				utfilB=scan(utfil,2,'.');
 			end;
-			else utbibl='work';
-			uttabell=utbibl || '.' || utfil;
+			else do;
+				utbibl='work';
+				utfilB=utfil;
+			end;
+			uttabell=utbibl || '.' || utfilB;
 			spec_index_helper(inbibl, infilB, utbibl, utfilB, varNamn, grpNamn, antalPerVarNamn);
 			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ', (sum(abs(grpAndel-jmfAndel))) as k_index from work.totAndel group by ' || grpNamn);
 			sqlExec('drop table work.totAndel'); 
 
+			put 'Spexindex ' version;
 		end;
 
 		method bindex(varchar(250) infil, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
@@ -63,12 +72,16 @@ proc ds2;
 				utbibl=scan(utfil,1,'.');
 				utfilB=scan(utfil,2,'.');
 			end;
-			else utbibl='work';
-			uttabell=utbibl || '.' || utfil;
+			else do;
+				utbibl='work';
+				utfilB=utfil;
+			end;
+			uttabell=utbibl || '.' || utfilB;
 			spec_index_helper(inbibl, infilB, utbibl, utfilB, varNamn, grpNamn, antalPerVarNamn);
-			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ',  varNamn as ' || varNamn || ', (grpAndel/jmfAndel) as bSpecIndex, grpAndel as andel_' || grpNamn || ', jmfAndel from work.totAndel'); 
+			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ',  varNamn as ' || varNamn || ', (case when jmfAndel in (., 0) and grpAndel>0 then 99 when jmfAndel in (., 0) and grpAndel=0 then 1 else (grpAndel/jmfAndel) end) as bSpecIndex, grpAndel as andel_' || grpNamn || ', jmfAndel from work.totAndel'); 
 			sqlExec('drop table work.totAndel'); 
 
+			put 'Spexindex ' version;
 		end;
 
 		method spec_index_helper(varchar(8) inbibl, varchar(250) infil, varchar(8) utbibl, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
