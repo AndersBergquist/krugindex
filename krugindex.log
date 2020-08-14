@@ -1,0 +1,180 @@
+1                                                          The SAS System                              09:28 Friday, August 14, 2020
+
+NOTE: Unable to open SASUSER.REGSTRY. WORK.REGSTRY will be opened instead.
+NOTE: All registry changes will be lost at the end of the session.
+
+WARNING: Unable to copy SASUSER registry to WORK registry. Because of this, you will not see registry customizations during this 
+         session.
+NOTE: Unable to open SASUSER.PROFILE. WORK.PROFILE will be opened instead.
+NOTE: All profile changes will be lost at the end of the session.
+NOTE: Copyright (c) 2016 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M6) 
+      Licensed to REGION UPPSALA, Site 51302321.
+NOTE: This session is executing on the X64_10PRO  platform.
+
+
+
+NOTE: Analytical products:
+      
+      SAS/STAT 15.1
+      SAS/ETS 15.1
+
+NOTE: Additional host information:
+
+ X64_10PRO WIN 10.0.17763  Workstation
+
+NOTE: SAS initialization used:
+      real time           4.58 seconds
+      cpu time            0.96 seconds
+      
+1          * Instruktioner *;
+2          * Ändra sasuser till önskat lib och kör skriptet. Då är det installerat och klart
+2        ! att köra.;
+3          ***Nedan kommer ett exempel på hur skiptet kan användas.;
+4          /* ** Byt till dina uppgifter för infil, utfil, varNamn, grpNamn och koncVar;
+5          proc ds2;
+6          	data _null_;
+7          		declare package sasuser.krugindex ki();
+8          
+9          		method run();
+10         
+11         			declare varchar(250) infil utfil;
+12         			declare varchar(50) varNamn grpNamn koncVar;
+13         
+14         			infil='work.intest';
+15         			utfil='work.ds2Kindex';
+16         			varNamn='Sun2000Grp'; *Variablen som koncentereras, t.ex. bransch eller
+16       ! utbildning;
+17         			grpNamn='ast_Lan'; *Variabeln som beskriver grupper, t.ex. län;
+18         			antalPerVarNamn='antal';
+19         	
+20         			ki.kindex(infil, utfil, varNamn, grpNamn, antalPerVarNamn );
+21         		end;
+22         		
+23         	enddata;
+24         run;quit;
+25         */
+26         
+27         proc ds2;
+2                                       The SAS System            09:28 Friday, August 14, 2020
+
+28         	package sasuser.specindex / overwrite=yes;
+29         		declare varchar(50) version;
+30         
+31         	forward spec_index_helper;
+32         
+33         		method specindex();
+34         			version='B1.0.3';
+35         		end;
+36         
+37         		method kindex(varchar(250) infil, varchar(250) utfil, varchar(50) varNamn,
+37       ! varchar(50) grpNamn, varchar(50) antalPerVarNamn);
+38         			declare varchar(8) inbibl utbibl;
+39         			declare varchar(250) infilB utfilB uttabell;;
+40         
+41         			if index(infil,'.')>0 then do;
+42         				inbibl=scan(infil,1,'.');
+43         				infilB=scan(infil,2,'.');
+44         			end;
+45         			else inbibl='work';
+46         			if index(utfil,'.')>0 then do;
+47         				utbibl=scan(utfil,1,'.');
+48         				utfilB=scan(utfil,2,'.');
+49         			end;
+50         			else do;
+51         				utbibl='work';
+52         				utfilB=utfil;
+53         			end;
+54         			uttabell=utbibl || '.' || utfilB;
+55         			spec_index_helper(inbibl, infilB, utbibl, utfilB, varNamn, grpNamn,
+55       ! antalPerVarNamn);
+56         			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ',
+56       ! (sum(abs(grpAndel-jmfAndel))) as k_index from work.totAndel group by ' || grpNamn);
+57         			sqlExec('drop table work.totAndel');
+58         
+59         			put 'Specindex ' version;
+60         		end;
+61         
+62         		method bindex(varchar(250) infil, varchar(250) utfil, varchar(50) varNamn,
+62       ! varchar(50) grpNamn, varchar(50) antalPerVarNamn);
+63         			declare varchar(8) inbibl utbibl;
+64         			declare varchar(250) infilB utfilB uttabell;;
+65         
+66         			if index(infil,'.')>0 then do;
+67         				inbibl=scan(infil,1,'.');
+68         				infilB=scan(infil,2,'.');
+69         			end;
+70         			else inbibl='work';
+71         			if index(utfil,'.')>0 then do;
+72         				utbibl=scan(utfil,1,'.');
+73         				utfilB=scan(utfil,2,'.');
+74         			end;
+75         			else do;
+76         				utbibl='work';
+77         				utfilB=utfil;
+78         			end;
+79         			uttabell=utbibl || '.' || utfilB;
+3                                       The SAS System            09:28 Friday, August 14, 2020
+
+80         			spec_index_helper(inbibl, infilB, utbibl, utfilB, varNamn, grpNamn,
+80       ! antalPerVarNamn);
+81         			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ',
+81       !  varNamn as ' || varNamn || ', grpKoncVar AS antal_' || grpNamn || ', (case when
+81       ! jmfAndel in (., 0) and grpAndel>0 then 99 when jmfAndel in (., 0) and grpAndel=0
+81       ! then 1 else (grpAndel/jmfAndel) end) as bSpecIndex, grpAndel as andel_' || grpNamn
+81       ! || ', jmfAndel from work.totAndel');
+82         			sqlExec('drop table work.totAndel');
+83         
+84         			put 'Specindex ' version;
+85         		end;
+86         
+87         		method spec_index_helper(varchar(8) inbibl, varchar(250) infil, varchar(8) utbibl,
+87       !  varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50)
+87       ! antalPerVarNamn);
+88         			declare varchar(258) intabell uttabell;
+89         
+90         			intabell=inbibl || '.' || infil;
+91         			uttabell=utbibl || '.' || utfil;
+92         			sqlExec('create table work.totGrpSum as select ' || varNamn || ' as varNamn, ' ||
+92       !  grpNamn || ' as grpNamn, sum( ' || antalPerVarNamn || ') as grpKoncVar from ' ||
+92       ! intabell || ' group by ' || varNamn || ', ' || grpNamn);
+93         			sqlExec('create table work.totJmfSum as select ' || varNamn || ' as varNamn, sum(
+93       !  ' || antalPerVarNamn || ') as jmfKoncVar from ' || intabell || ' group by ' ||
+93       ! varNamn);
+94         			sqlExec('create table work.totGrpjmfSum as select t2.varNamn, t1.grpNamn,
+94       ! t1.grpKoncVar, sum(t2.jmfKoncVar,-t1.grpKoncVar) as jmfAntal
+95                              from work.totJmfSum t2 left join work.totGrpSum t1 on
+95       ! (t2.varNamn=t1.varNamn)');
+96         			sqlExec('drop table work.totGrpSum');
+97         			sqlExec('drop table work.totJmfSum');
+98         			sqlExec('create table work.totAntal as select grpNamn, sum(grpKoncVar) as
+98       ! grpSumAntal, sum(jmfAntal)as jmfSumAndel from work.totGrpjmfSum group by grpNamn');
+99         			sqlExec('create table work.totAndel as select t1.varNamn, t2.grpNamn,
+99       ! t1.grpKoncVar, (t1.grpKoncVar/t2.grpSumAntal) as grpAndel,
+99       ! (t1.jmfAntal/t2.jmfSumAndel) as jmfAndel
+100                             from work.totGrpjmfSum t1 join work.totAntal t2 on
+100      ! (t1.grpNamn=t2.grpNamn)');
+101        			sqlExec('drop table work.totGrpJmfSum');
+102        			sqlExec('drop table work.totAntal');
+103        		end;
+104        	endpackage;
+105        run;
+105      !     quit;
+NOTE: Created package specindex in data set sasuser.specindex.
+NOTE: Execution succeeded. No rows affected.
+
+NOTE: PROCEDURE DS2 used (Total process time):
+      real time           2.51 seconds
+      cpu time            0.35 seconds
+      
+
+106        
+107        
+
+NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414
+4                                       The SAS System            09:28 Friday, August 14, 2020
+
+NOTE: The SAS System used:
+      real time           7.42 seconds
+      cpu time            1.40 seconds
+      

@@ -31,7 +31,7 @@ proc ds2;
 	forward spec_index_helper;
 
 		method specindex();
-			version='B1.0.2';
+			version='B1.0.3';
 		end;
 
 		method kindex(varchar(250) infil, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
@@ -56,7 +56,7 @@ proc ds2;
 			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ', (sum(abs(grpAndel-jmfAndel))) as k_index from work.totAndel group by ' || grpNamn);
 			sqlExec('drop table work.totAndel'); 
 
-			put 'Spexindex ' version;
+			put 'Specindex ' version;
 		end;
 
 		method bindex(varchar(250) infil, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
@@ -81,7 +81,7 @@ proc ds2;
 			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ',  varNamn as ' || varNamn || ', grpKoncVar AS antal_' || grpNamn || ', (case when jmfAndel in (., 0) and grpAndel>0 then 99 when jmfAndel in (., 0) and grpAndel=0 then 1 else (grpAndel/jmfAndel) end) as bSpecIndex, grpAndel as andel_' || grpNamn || ', jmfAndel from work.totAndel'); 
 			sqlExec('drop table work.totAndel'); 
 
-			put 'Spexindex ' version;
+			put 'Specindex ' version;
 		end;
 
 		method spec_index_helper(varchar(8) inbibl, varchar(250) infil, varchar(8) utbibl, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
