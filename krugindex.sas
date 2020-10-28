@@ -26,17 +26,21 @@ run;quit;
 
 proc ds2;
 	package sasuser.specindex / overwrite=yes;
+		declare integer antal;			
 		declare varchar(50) version;
+		declare nvarchar(8) lib;
+		declare nvarchar(32) tabell;
 
-	forward spec_index_helper;
+	forward spec_index_helper deleteTabell;
 
 		method specindex();
-			version='B1.0.3';
+			version='B1.0.4';
 		end;
 
 		method kindex(varchar(250) infil, varchar(250) utfil, varchar(50) varNamn, varchar(50) grpNamn, varchar(50) antalPerVarNamn);
 			declare varchar(8) inbibl utbibl;
 			declare varchar(250) infilB utfilB uttabell;;
+
 
 			if index(infil,'.')>0 then do;
 				inbibl=scan(infil,1,'.');
@@ -53,6 +57,7 @@ proc ds2;
 			end;
 			uttabell=utbibl || '.' || utfilB;
 			spec_index_helper(inbibl, infilB, utbibl, utfilB, varNamn, grpNamn, antalPerVarNamn);
+			deleteTabell(utbibl, utfilB);
 			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ', (sum(abs(grpAndel-jmfAndel))) as k_index from work.totAndel group by ' || grpNamn);
 			sqlExec('drop table work.totAndel'); 
 
@@ -63,6 +68,7 @@ proc ds2;
 			declare varchar(8) inbibl utbibl;
 			declare varchar(250) infilB utfilB uttabell;;
 
+
 			if index(infil,'.')>0 then do;
 				inbibl=scan(infil,1,'.');
 				infilB=scan(infil,2,'.');
@@ -78,6 +84,7 @@ proc ds2;
 			end;
 			uttabell=utbibl || '.' || utfilB;
 			spec_index_helper(inbibl, infilB, utbibl, utfilB, varNamn, grpNamn, antalPerVarNamn);
+			deleteTabell(utbibl, utfilB);
 			sqlExec('create table ' || uttabell || ' as select grpNamn as ' || grpNamn || ',  varNamn as ' || varNamn || ', grpKoncVar AS antal_' || grpNamn || ', (case when jmfAndel in (., 0) and grpAndel>0 then 99 when jmfAndel in (., 0) and grpAndel=0 then 1 else (grpAndel/jmfAndel) end) as bSpecIndex, grpAndel as andel_' || grpNamn || ', jmfAndel from work.totAndel'); 
 			sqlExec('drop table work.totAndel'); 
 
@@ -89,6 +96,7 @@ proc ds2;
 
 			intabell=inbibl || '.' || infil;
 			uttabell=utbibl || '.' || utfil;
+
 			sqlExec('create table work.totGrpSum as select ' || varNamn || ' as varNamn, ' || grpNamn || ' as grpNamn, sum( ' || antalPerVarNamn || ') as grpKoncVar from ' || intabell || ' group by ' || varNamn || ', ' || grpNamn);
 			sqlExec('create table work.totJmfSum as select ' || varNamn || ' as varNamn, sum( ' || antalPerVarNamn || ') as jmfKoncVar from ' || intabell || ' group by ' || varNamn);
 			sqlExec('create table work.totGrpjmfSum as select t2.varNamn, t1.grpNamn, t1.grpKoncVar, sum(t2.jmfKoncVar,-t1.grpKoncVar) as jmfAntal
@@ -101,6 +109,28 @@ proc ds2;
 			sqlExec('drop table work.totGrpJmfSum');
 			sqlExec('drop table work.totAntal');
 		end;
+
+		method deleteTabell(nvarchar(8) iLib, nvarchar(32) iTabell);
+			declare package sqlstmt s('select count(*) as antal from dictionary.tables where TABLE_SCHEM=? AND table_name=?',[lib tabell]);
+			tabell=upcase(iTabell);
+			lib=upcase(iLib);
+			s.execute();
+			s.bindresults([antal]);
+			s.fetch();
+			if antal > 0 then do;
+				sqlExec('drop table ' || iLib || '.' || iTabell);
+			end;
+
+
+		end;*finnsTabell;
+
+		method delTable();
+			declare varchar(8) utbibl;
+			declare varchar(250) utfilB uttabell;;
+			declare integer finnsFil;
+
+		end;*delTable;
+
 	endpackage;
 run;quit;
 
